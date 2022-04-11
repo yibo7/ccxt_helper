@@ -1,13 +1,14 @@
 import sys
 
-import ccxt
+# import ccxt
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication
+# from XsCore import XsDateUtils
 
 from index_win import IndexWindow
 
 if __name__ == '__main__':
-    print(dir(ccxt.hitbtc))  # Python
+    # print(dir(ccxt.hitbtc))  # Python
     app = QApplication(sys.argv)
     app.setWindowIcon(QIcon('ui/logo.ico'))
     indexWin = IndexWindow()

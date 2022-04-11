@@ -1,0 +1,5 @@
+pyside6~=6.2.4
+ccxt~=1.78.63
+xscorepy~=1.0.3
+pyperclip~=1.8.2
+pandas~=1.4.2

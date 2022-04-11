@@ -199,7 +199,7 @@ class OrderBooksUi(PluginUiBase):
 
         all_df = all_df.sort_values(by='datetime', ascending=True)
 
-        print(all_df)
+        # print(all_df)
 
         return all_df
 
@@ -223,10 +223,11 @@ class OrderBooksUi(PluginUiBase):
         # df['open_time'] = df['open_time'].apply(lambda x: (x // 60) * 60 * 1000)
         df['datetime'] = df['datetime'].apply(lambda x: (x // 60) * 60)  # 获取整分的数据.
         print(df)
-        df['Datetime'] = pd.to_datetime(df['datetime'], unit='ms') + pd.Timedelta(hours=8)  # 把UTC时间转成北京时间.
-        df['Datetime'] = df['Datetime'].apply(lambda x: str(x)[0:19])  # 2018-11-15 00:47:0034, 通过截取字符串长度.
+        df['Datetime2'] = pd.to_datetime(df['datetime'], unit='ms') + pd.Timedelta(hours=8)  # 把UTC时间转成北京时间.
+        df['Datetime2'] = df['Datetime2'].apply(lambda x: str(x)[0:19])  # 2018-11-15 00:47:0034, 通过截取字符串长度.
+        # df['Datetime3'] = XsDateUtils.seconds_to_str(df['datetime'].astype(int)/1000)
         df.drop_duplicates(subset=['datetime'], inplace=True)
-        df.set_index('Datetime', inplace=True)
+        df.set_index('Datetime2', inplace=True)
         # print("*" * 20)
         # print(df)
         df.to_csv(f'{self.out_path}/{XsDateUtils.getCurrentMilliSecondTime()}.csv')
