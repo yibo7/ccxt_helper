@@ -134,5 +134,5 @@ class IndexWindow(QMainWindow):
         self.ui.lbPluginInfo.setText(self.plugin.info)
         self.plugin_ui = self.plugin.get_ui()
         self.ui.layout_main.addWidget(self.plugin_ui)
-        t = threading.Thread(target=self.plugin_ui.data_bind, )  # args=(i,)
-        t.start()
+        thread_bind = threading.Thread(target=self.plugin_ui.data_bind, )  # args=(i,)
+        thread_bind.start()

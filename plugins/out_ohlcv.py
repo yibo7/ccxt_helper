@@ -1,5 +1,7 @@
 import datetime
 import os
+import shutil
+import threading
 import time
 from datetime import date, timedelta
 
@@ -94,6 +96,9 @@ class OrderBooksUi(PluginUiBase):
         self.symbol = ''
         self.out_path = '' # 用户选择的最终整合导出目录
         self.save_dir = "" # 保存临时数据目录
+        self.startTime = ""
+        self.endTime = ""
+        self.timeType = ""
 
     def sel_path(self):
         directory = QtWidgets.QFileDialog.getExistingDirectory(self, "getExistingDirectory", "./")
@@ -108,10 +113,13 @@ class OrderBooksUi(PluginUiBase):
             XsCore.showInfo('请选择导出目录')
             return
 
-        kl_type_key = self.cb_k_type.currentText()
-        s = self.dt_start.date().toString(Qt.ISODate)
-        e = self.dt_end.date().toString(Qt.ISODate)
-        self.get_kline(self.symbol, s, e,self.kline_type[kl_type_key])
+        self.timeType = self.cb_k_type.currentText()
+        self.startTime = self.dt_start.date().toString(Qt.ISODate)
+        self.endTime = self.dt_end.date().toString(Qt.ISODate)
+        self.btn_save.setEnabled(False)
+        thread_bind = threading.Thread(target=self.get_kline,args=(self.symbol, self.startTime, self.endTime,self.kline_type[self.timeType]))  # args=(i,)
+        thread_bind.start()
+        # self.get_kline(self.symbol, s, e,self.kline_type[kl_type_key])
 
     def get_kline(self, symbol, start_time, end_time,date_type = '1m'):
         """
@@ -124,10 +132,13 @@ class OrderBooksUi(PluginUiBase):
         """
         current_path = os.getcwd()
         file_dir = os.path.join(current_path,'database\\out', symbol.replace('/', ''))
-        print(file_dir)
-        if not os.path.exists(file_dir):
-            # 如果这个文件路径不存在,则创建这个文件夹，来存放数据.
-            os.makedirs(file_dir)
+
+        if os.path.exists(file_dir):
+            # 如果目录存在，需要先删除，这样可以先清空目录下的数据.
+            shutil.rmtree(file_dir) # 对非空目录的删除要使用 shutil.rmtree，而os.removedirs 只能删除空目录
+            print("删除目录")
+
+        os.makedirs(file_dir) # 创建这个文件夹，用来存放临时数据
         self.save_dir = file_dir
         start_time = datetime.datetime.strptime(start_time, '%Y-%m-%d')
         end_time = datetime.datetime.strptime(end_time, '%Y-%m-%d')
@@ -136,10 +147,10 @@ class OrderBooksUi(PluginUiBase):
         end_time_stamp = int(time.mktime(end_time.timetuple())) * 1000
 
         limit_count = 200  # bybit 请求的数据有限制，每次只能请求200个.
-
+        self.on_log('开始获取数据...', is_json=False)
         while True:
             try:
-                print(start_time_stamp)
+                print(f'从开始时间：{start_time_stamp}开始请求{limit_count}条数据')
                 data = self.exchange.fetch_ohlcv(symbol, timeframe=date_type, since=start_time_stamp, limit=limit_count)
                 df = pd.DataFrame(data)
                 df.rename(columns={0: 'datetime', 1: 'open', 2: 'high', 3: 'low', 4: 'close', 5: 'volume'},
@@ -160,14 +171,17 @@ class OrderBooksUi(PluginUiBase):
                 time.sleep(0.2)  # 1/25
 
             except Exception as error:
+                print("发生错误了：")
                 print(error)
                 time.sleep(10)
         print("清洗数据.")
         self.clear_datas()
         print("结束.")
+        self.on_log('所有操作完成！', is_json=False)
+        self.btn_save.setEnabled(True)
 
     def closeEvent(self, event):
-        print('关闭了...')
+        print('当前插件关闭...')
         # self.timer.stop()
         event.accept()
         self.destroy()
@@ -195,7 +209,8 @@ class OrderBooksUi(PluginUiBase):
 
         for file in file_paths:
             df = pd.read_csv(file)
-            all_df = all_df.append(df, ignore_index=True)
+            # all_df = all_df.append(df, ignore_index=True)
+            all_df = pd.concat([all_df,df], ignore_index=True)
 
         all_df = all_df.sort_values(by='datetime', ascending=True)
 
@@ -230,5 +245,7 @@ class OrderBooksUi(PluginUiBase):
         df.set_index('Datetime2', inplace=True)
         # print("*" * 20)
         # print(df)
-        df.to_csv(f'{self.out_path}/{XsDateUtils.get_milli_second()}.csv')
+        savetodir = f'{self.out_path}/{self.symbol.replace("/","")}从{self.startTime}到{self.endTime}的{self.timeType}线.csv'
+        print(savetodir)
+        df.to_csv(savetodir)
 
