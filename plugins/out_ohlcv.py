@@ -230,5 +230,5 @@ class OrderBooksUi(PluginUiBase):
         df.set_index('Datetime2', inplace=True)
         # print("*" * 20)
         # print(df)
-        df.to_csv(f'{self.out_path}/{XsDateUtils.getCurrentMilliSecondTime()}.csv')
+        df.to_csv(f'{self.out_path}/{XsDateUtils.get_milli_second()}.csv')
 
